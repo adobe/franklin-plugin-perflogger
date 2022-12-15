@@ -1,23 +1,27 @@
 const LABEL_COLORS = {
-  general: '#888',
+  misc: '#444',
+  fcp: '#0a0',
   fid: 'purple',
   cls: '#c50',
   lcp: 'green',
   tbt: 'red',
-  paint: '#b73',
+  fp: '#b73',
+  load: '#888',
 };
 
 const DEFAULT_OPTIONS = {
+  debug: false,
   cls: true,
+  fcp: true,
   fid: true,
+  fp: true,
   lcp: true,
   tbt: true,
-  paints: true,
   resources: true,
 }
 
-function log(message, time = new Date() - performance.timeOrigin, type = 'general') {
-  const color = LABEL_COLORS[type] || LABEL_COLORS.general;
+function log(message, time = new Date() - performance.timeOrigin, type = 'misc') {
+  const color = LABEL_COLORS[type] || LABEL_COLORS.misc;
   console.log(
     `%c${Math.round(time).toString().padStart(5, ' ')}%c %c${type}%c ${message}`,
     'background-color: #444; padding: 3px; border-radius: 3px;',
@@ -27,104 +31,124 @@ function log(message, time = new Date() - performance.timeOrigin, type = 'genera
   );
 }
 
-function trackFirstInputDelay() {
+function trackFirstContentfulPaint(options) {
   const observer = new PerformanceObserver((list) => {
-    list.getEntries().forEach((entry) => {
-      log(JSON.stringify(entry), entry.processingStart - entry.startTime, 'fid');
-    });
-  });
-  observer.observe({ type: 'first-input', buffered: true });
-}
-
-function trackLagestContentfulPaint() {
-  const observer = new PerformanceObserver((list) => {
-    list.getEntries().forEach((entry) => {
-      log(JSON.stringify(entry), entry.startTime, 'lcp');
-      console.log(entry.element);
-    });
-  });
-  observer.observe({ type: 'largest-contentful-paint', buffered: true });
-}
-
-function trackCumulativeLayoutShifts() {
-  const observer = new PerformanceObserver((list) => {
-    list.getEntries().forEach((entry) => {
-      const to = entry.sources[0].currentRect;
-      const from = entry.sources[0].previousRect;
-      log(`${Math.round(entry.value * 100000) / 100000}
-      from: ${from.top} ${from.right} ${from.bottom} ${from.left}
-      to:   ${to.top} ${to.right} ${to.bottom} ${to.left}`, entry.startTime, 'cls');
-      console.log(entry.sources[0].node);
-    });
-  });
-  observer.observe({ type: 'layout-shift', buffered: true });
-}
-
-function trackLongTasks() {
-  const observer = new PerformanceObserver((list) => {
-    list.getEntries().forEach((entry) => {
-      log(JSON.stringify(entry), entry.startTime, 'tbt');
-      entry.attribution.forEach((attributionEntry) => {
-        console.log(attributionEntry);
-      });
-    });
-  });
-  observer.observe({ type: 'longtask', buffered: true });
-}
-
-function trackPaints() {
-  const observer = new PerformanceObserver((list) => {
-    list.getEntries().forEach((entry) => {
-      log(JSON.stringify(entry), entry.startTime, 'paint');
+    list.getEntriesByName('first-contentful-paint').forEach((entry) => {
+      log('', entry.startTime, 'fcp');
+      if (options.debug) {
+        console.log(JSON.stringify(entry));
+      }
     });
   });
   observer.observe({ type: 'paint', buffered: true });
 }
 
-function trackResources() {
+function trackFirstInputDelay(options) {
   const observer = new PerformanceObserver((list) => {
     list.getEntries().forEach((entry) => {
-      log(`${entry.name} loaded`, Math.round(entry.startTime + entry.duration));
+      log(JSON.stringify(entry), entry.processingStart - entry.startTime, 'fid');
+      if (options.debug) {
+        console.log(JSON.stringify(entry));
+      }
+    });
+  });
+  observer.observe({ type: 'first-input', buffered: true });
+}
+
+function trackLagestContentfulPaint(options) {
+  const observer = new PerformanceObserver((list) => {
+    list.getEntries().forEach((entry) => {
+      log(entry.url, entry.startTime, 'lcp');
+      console.log(entry.element);
+      if (options.debug) {
+        console.log(JSON.stringify(entry));
+      }
+    });
+  });
+  observer.observe({ type: 'largest-contentful-paint', buffered: true });
+}
+
+function trackCumulativeLayoutShifts(options) {
+  const observer = new PerformanceObserver((list) => {
+    list.getEntries().forEach((entry) => {
+      let source = entry.sources[0];
+      const to = entry.sources[0].currentRect;
+      const from = entry.sources[0].previousRect;
+      log(`${Math.round(entry.value * 100000) / 100000}
+        from: ${from.top} ${from.right} ${from.bottom} ${from.left}
+        to:   ${to.top} ${to.right} ${to.bottom} ${to.left}`, entry.startTime, 'cls');
+      let { node } = entry.sources[0];
+      console.log(node.nodeType === Node.TEXT_NODE ? node.parentElement : node);
+      if (options.debug) {
+        console.log(JSON.stringify(entry));
+      }
+    });
+  });
+  observer.observe({ type: 'layout-shift', buffered: true });
+}
+
+function trackLongTasks(options) {
+  const observer = new PerformanceObserver((list) => {
+    list.getEntries().forEach((entry) => {
+      log(`${entry.duration}ms`, entry.startTime, 'tbt');
+      if (options.debug) {
+        console.log(JSON.stringify(entry));
+      }
+    });
+  });
+  observer.observe({ type: 'longtask', buffered: true });
+}
+
+function trackFirstPaint(options) {
+  const observer = new PerformanceObserver((list) => {
+    list.getEntriesByName('first-paint').forEach((entry) => {
+      log('', entry.startTime, 'fp');
+      if (options.debug) {
+        console.log(JSON.stringify(entry));
+      }
+    });
+  });
+  observer.observe({ type: 'paint', buffered: true });
+}
+
+function trackResources(options) {
+  const observer = new PerformanceObserver((list) => {
+    list.getEntries().forEach((entry) => {
+      log(entry.name, Math.round(entry.startTime + entry.duration), 'load');
+      if (options.debug) {
+        console.log(JSON.stringify(entry));
+      }
     });
   });
   observer.observe({ type: 'resource', buffered: true });
 }
 
-function registerPerformanceLogger() {
-  try {
-    const polcp = new PerformanceObserver((entryList) => {
-      const entries = entryList.getEntries();
-      entries.forEach((entry) => {
-        log(JSON.stringify(entry), entry.startTime, 'lcp');
-        // eslint-disable-next-line no-console
-        console.log(entry.element);
-      });
-    });
-    polcp.observe({ type: 'largest-contentful-paint', buffered: true });
-  } catch (e) {
-    // no output
-  }
-}
-
 export const init = (options) => {
   log('Starting Franklin performance logger');
   const config = { ...DEFAULT_OPTIONS, ...options };
-  if (config.fid) {
-    trackFirstInputDelay();
-  }
-  if (config.lcp) {
-    trackLagestContentfulPaint();
-  }
-  if (config.cls) {
-    trackCumulativeLayoutShifts();
-  }
-  if (config.tbt) {
-    trackLongTasks();
-  }
-  if (config.paints) {
-    trackPaints();
-  }
-  if (config.resources) {
-    trackResources();
+  try {
+    if (config.fcp) {
+      trackFirstContentfulPaint(options);
+    }
+    if (config.fp) {
+      trackFirstPaint(options);
+    }
+    if (config.fid) {
+      trackFirstInputDelay(options);
+    }
+    if (config.lcp) {
+      trackLagestContentfulPaint(options);
+    }
+    if (config.cls) {
+      trackCumulativeLayoutShifts(options);
+    }
+    if (config.tbt) {
+      trackLongTasks(options);
+    }
+    if (config.resources) {
+      trackResources(options);
+    }
+  } catch (e) {
+    // no output
   }
 }
