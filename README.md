@@ -1,7 +1,9 @@
 # franklin-plugin-perflogger
-A performance logger plugin for Franklin that will output key performance metrics (core web vitals and a few others) to console. It won't be as accurate as proper https://pagespeed.web.dev/ or other services that can report stable lab data, or realistic field metrics, but it does help highlight key improvement areas during development.
+A performance logger plugin for Franklin that will output key performance metrics (core web vitals and a few others) to console. It is meant to be used with this forked [Franklin Project Boilerplate](https://github.com/ramboz/helix-project-boilerplate) that includes a plugin system.
 
+The performance logger won't be as accurate as proper solutions like https://pagespeed.web.dev/ or other services that can report stable lab data, or realistic field metrics, but it does help highlight key improvement areas during development.
 
+![](./docs/screenshot.png)
 
 ## Install
 
@@ -58,17 +60,17 @@ by making sure you place the `init` call as close to the beginning of your scrip
 
 ## Configuration
 
-| Name | Default | Description |
-|-|-|-|
-| cls | true | Tracks _cumulative layout shifts_ events
-| dcl | true | Tracks the `DOMContentLoaded` and `load` events
-| fcp | true | Tracks the _first contentful paint_ event
-| fid | true | Tracks the _first input delay_ event
-| fp  | true | Tracks the _first paint_ event
-| lcp | true | Tracks the _largest contentful paint_ event
-| resources | true | Tracks the `load` event for each resource
-| tbt | true | Tracks the _long tasks_ events contributing to the _total blocking time_
-| debug | false | Logs more fine-grained details for every event
+| Name | Default | Type | Description |
+|-|-|-|-|
+| `cls` | `true` | `boolean` | Tracks _cumulative layout shifts_ events
+| `dcl` | `true` | `boolean` | Tracks the `DOMContentLoaded` and `load` events
+| `fcp` | `true` | `boolean` | Tracks the _first contentful paint_ event
+| `fid` | `true` | `boolean` | Tracks the _first input delay_ event
+| `fp`  | `true` | `boolean` | Tracks the _first paint_ event
+| `lcp` | `true` | `boolean` | Tracks the _largest contentful paint_ event
+| `tbt` | `true` | `boolean` | Tracks the _long tasks_ events contributing to the _total blocking time_
+| `resources` | `true` | `boolean` | Tracks the `load` event for each resource
+| `debug` | `false` | `boolean` | Logs more fine-grained details for every event
 
 You'd use those as follows:
 ```js
