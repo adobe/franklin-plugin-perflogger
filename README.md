@@ -7,7 +7,7 @@ The performance logger won't be as accurate as proper solutions like https://pag
 
 ## Install
 
-### npm scripts
+### Via the boilerplate
 
 ```bash
 npm run franklin:plugin:add --name=perflogger --url=git@github.com:ramboz/franklin-plugin-perflogger.git
