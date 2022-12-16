@@ -25,7 +25,7 @@ import {
   init,
 } from './index';
 
-describe('Performance Logger', () => {
+describe('Performance Logger Plugin', () => {
   let reporter;
   beforeEach(() => {
     sinon.spy(console, 'log');
