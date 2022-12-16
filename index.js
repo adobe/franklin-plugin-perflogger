@@ -12,17 +12,19 @@
 
 const LABEL_COLORS = {
   misc: '#444',
-  fcp: '#0a0',
-  fid: 'purple',
   cls: '#c50',
-  lcp: 'green',
+  dcl: '#185ebd',
+  fcp: 'green',
+  fid: 'purple',
+  fp: 'mediumseagreen',
+  lcp: 'darkgreen',
   tbt: 'red',
-  fp: '#b73',
   load: '#888',
 };
 
 const DEFAULT_OPTIONS = {
   debug: false,
+  dcl: true,
   cls: true,
   fcp: true,
   fid: true,
@@ -32,8 +34,8 @@ const DEFAULT_OPTIONS = {
   resources: true,
 }
 
-function log(message, time = new Date() - performance.timeOrigin, type = 'misc') {
-  const color = LABEL_COLORS[type] || LABEL_COLORS.misc;
+function log(message, time = new Date() - performance.timeOrigin, type = 'misc', colorOverride) {
+  const color = colorOverride || LABEL_COLORS[type] || LABEL_COLORS.misc;
   console.log(
     `%c${Math.round(time).toString().padStart(5, ' ')}%c %c${type}%c ${message}`,
     'background-color: #444; padding: 3px; border-radius: 3px;',
@@ -41,6 +43,28 @@ function log(message, time = new Date() - performance.timeOrigin, type = 'misc')
     `background-color: ${color}; padding: 3px 5px; border-radius: 3px;`,
     '',
   );
+}
+
+function pad(value, length = 5, filler = ' ') {
+  return value.toString().padStart(length, filler);
+}
+
+function trackDomContentLoaded(options) {
+  const observer = new PerformanceObserver((list) => {
+    list.getEntries().forEach((entry) => {
+      if (entry.loadEventStart) {
+        const total = entry.loadEventEnd - entry.loadEventStart;
+        log(`${entry.name}. Load handler took ${total.toFixed(2)}ms`, entry.loadEventStart, 'load', 'darkred');
+      } else {
+        const total = entry.domContentLoadedEventEnd - entry.domContentLoadedEventStart;
+        log(`${entry.name}. DomContentLoaded handler took ${total.toFixed(2)}ms`, entry.domContentLoadedEventStart, 'dcl');
+      }
+      if (options.debug) {
+        console.log(JSON.stringify(entry));
+      }
+    });
+  });
+  observer.observe({ type: 'navigation', buffered: true });
 }
 
 function trackFirstContentfulPaint(options) {
@@ -58,7 +82,8 @@ function trackFirstContentfulPaint(options) {
 function trackFirstInputDelay(options) {
   const observer = new PerformanceObserver((list) => {
     list.getEntries().forEach((entry) => {
-      log(JSON.stringify(entry), entry.processingStart - entry.startTime, 'fid');
+      log(`${entry.name} took ${entry.duration}ms`, entry.startTime, 'fid');
+      console.log(entry.target);
       if (options.debug) {
         console.log(JSON.stringify(entry));
       }
@@ -83,17 +108,19 @@ function trackLagestContentfulPaint(options) {
 function trackCumulativeLayoutShifts(options) {
   const observer = new PerformanceObserver((list) => {
     list.getEntries().forEach((entry) => {
-      let source = entry.sources[0];
-      const to = entry.sources[0].currentRect;
-      const from = entry.sources[0].previousRect;
-      log(`${Math.round(entry.value * 100000) / 100000}
-        from: ${from.top} ${from.right} ${from.bottom} ${from.left}
-        to:   ${to.top} ${to.right} ${to.bottom} ${to.left}`, entry.startTime, 'cls');
-      let { node } = entry.sources[0];
-      console.log(node.nodeType === Node.TEXT_NODE ? node.parentElement : node);
-      if (options.debug) {
-        console.log(JSON.stringify(entry));
-      }
+      log(`${Math.round(entry.value * 100000) / 100000}ms`, entry.startTime, 'cls');
+      entry.sources.forEach((source) => {
+        const to = source.currentRect;
+        const from = source.previousRect;
+        let { node } = source;
+        console.log(
+          `        from: ${pad(from.top, 4)} ${pad(from.right, 4)} ${pad(from.bottom, 4)} ${pad(from.left, 4)}\n` +
+          `        to:   ${pad(to.top, 4)} ${pad(to.right, 4)} ${pad(to.bottom, 4)} ${pad(to.left, 4)}`);
+        console.log(node.nodeType === Node.TEXT_NODE ? node.parentElement : node);
+        if (options.debug) {
+          console.log(JSON.stringify(entry));
+        }
+      });
     });
   });
   observer.observe({ type: 'layout-shift', buffered: true });
@@ -126,7 +153,8 @@ function trackFirstPaint(options) {
 function trackResources(options) {
   const observer = new PerformanceObserver((list) => {
     list.getEntries().forEach((entry) => {
-      log(entry.name, Math.round(entry.startTime + entry.duration), 'load');
+      const blockingStatus = entry.renderBlockingStatus === 'blocking' ? ' (by ' + entry.initiatorType + ', ' + entry.renderBlockingStatus + ')' : '';
+      log(`${entry.name}${blockingStatus}`, Math.round(entry.startTime + entry.duration), 'load');
       if (options.debug) {
         console.log(JSON.stringify(entry));
       }
@@ -139,6 +167,9 @@ export const init = (options) => {
   log('Starting Franklin performance logger');
   const config = { ...DEFAULT_OPTIONS, ...options };
   try {
+    if (config.dcl) {
+      trackDomContentLoaded(options);
+    }
     if (config.fcp) {
       trackFirstContentfulPaint(options);
     }
