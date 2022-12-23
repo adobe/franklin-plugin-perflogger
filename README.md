@@ -5,6 +5,8 @@ The performance logger won't be as accurate as proper solutions like https://pag
 
 ![](./docs/screenshot.png)
 
+See it in action at https://plugins-perflogger--helix-project-boilerplate--ramboz.hlx.live/.
+
 ## Install
 
 ### Via the boilerplate
